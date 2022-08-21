@@ -1,0 +1,302 @@
+//
+//  main.cpp
+//  Sudoku Generator
+//
+//  Created by Dominic Iquina on 6/22/22.
+// Super inefficient and sometimes still gets stuck, need to finish bug fixing
+// but haven't gotten around to it
+
+#include <iostream>
+#include <random>
+using namespace std;
+#define size 9
+
+
+//How many numbers are originally put into the board, about 34 for easy
+int amountOfStarting = 0;
+
+random_device dev;
+mt19937 rng(dev());
+uniform_int_distribution<mt19937::result_type> dist9(1,9);
+
+
+int hold = 0;
+int boardMain[size][size] = {
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0, 0}
+};
+
+int boardHold[size][size];
+int br = 0;
+
+int randomNum();
+void assignRandomNum();
+void generateBoard();
+bool check(int num, int column, int row, int board[size][size]);
+
+bool EmptySpace(int &row, int &column);
+bool Solver();
+void bugChecker(int row, int col, int num);
+//These are done no longer do;
+bool rowSolve(int num, int row, int board[size][size]);
+bool columnSolve(int num, int column, int board[size][size]);
+bool boxSolve(int num, int start, int board[size][size]);
+int errorFix();
+
+int starting = 0;
+int bruh;
+int same = 0;
+
+int main() {
+    
+    cout << "Enter the amount of spaces you would like filled\n";
+    cin >> amountOfStarting;
+    
+    boardMain[randomNum() - 1][randomNum() - 1] = randomNum();
+    while(hold < amountOfStarting) {
+        assignRandomNum();
+    }
+    int final;
+    //Board should be complete here but for some reason there are generally too many numbers
+    //if that happens remove nums until the amount is correct
+    //Check if it has the correct number if not remove random places until that number is correct
+    final = errorFix();
+    while(final != amountOfStarting) {
+        int col = randomNum() - 1;
+        int row = randomNum() - 1;
+        boardMain[row][col] = 0;
+        final = errorFix();
+    }
+    generateBoard();
+    cout << "\n" << br << endl;
+}
+
+//Checks for all of the row, column, and box
+
+bool boxSolve(int num, int startRow, int startColumn, int board[size][size]) {
+    for(int i = 0; i < 3; i++) {
+        for(int j = 0; j < 3; j++) {
+            if(num == board[i+startColumn][j+startRow]) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool columnSolve(int num, int column, int board[size][size]) {
+    for(int row = 0; row < size; row++) {
+        if(board[column][row] == num) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool rowSolve(int num, int row, int board[size][size]) {
+    for(int column = 0; column < size; column++) {
+        if(board[column][row] == num) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+
+
+
+//check(randomNum(), the box checked, the column checked, the row checked
+
+int num = 0;
+bool Solver() {
+    int rower = 0;
+    int coler = 0;
+    
+    if(!EmptySpace(rower, coler)) {
+        hold = 0;
+        for(int i = 0; i < size; i++) {
+            for(int j = 0; j < size; j++) {
+                if(boardMain[i][j] != 0) {
+                    hold++;
+                }
+            }
+        }
+        /*or(int i = 0; i < size; i++) {
+            cout << "{";
+            for(int j = 0; j < size; j++) {
+                if(j == 8) {
+                    cout << boardHold[i][j];
+                } else {
+                    cout << boardHold[i][j] << ", ";
+                }
+            }
+            if(i != 8) {
+            cout << "}," << endl;
+            } else {
+                cout << "}" << endl;
+            }
+        }*/
+        return true;
+    }
+    
+    for(int n = 1; n <=9; n++) {
+        if(check(n,rower,coler,boardHold)) {
+            boardHold[rower][coler] = n;
+            num = n;
+            if(Solver()) {
+                return true;
+            }
+            boardHold[rower][coler] = 0;
+        }
+    }
+    return false;
+}
+
+bool EmptySpace(int &row, int &col) {
+    //Use pass by reference to increase the row number and the column number in order to check every spot
+    for(row = 0; row < size; row++) {
+        for(col = 0; col < size; col++) {
+            if(boardHold[row][col] == 0) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+
+bool check(int num, int column, int row,  int board[size][size]) {
+    if(boxSolve(num, row-row%3, column-column%3, board) && rowSolve(num, row, board) && columnSolve(num, column, board)){
+        return true;
+    }
+    br++;
+    return false;
+}
+
+
+void assignRandomNum() {
+    int row = randomNum() - 1;
+    int column = randomNum() - 1;
+    
+    if(boardMain[row][column] != 0) {
+        assignRandomNum();
+    }
+    int num = randomNum();
+    
+    if(boardMain[row][column] == 0 && check(num, column, row, boardMain)) {
+        boardMain[column][row] = num;
+        for(int i = 0; i < size; i++) {
+            for(int j = 0; j < size; j++) {
+                boardHold[j][i] = boardMain[j][i];
+            }
+        }
+        if(!Solver()) {
+            boardMain[row][column] = 0;
+            assignRandomNum();
+        }
+    }
+}
+
+
+int randomNum() {
+    //Generates numbers 1 - 9
+    //return 1 + rand() % 9;
+    return dist9(rng);
+}
+
+void generateBoard() {
+    /*
+    cout << " ";
+    for(int h = 0; h < size * 4 - 1; h++) {
+        cout << "-";
+    }
+    cout << endl;
+    for(int i = 0; i < size; i++) {
+        cout << "| ";
+        for(int j = 0; j < size; j++) {
+            cout << board[i][j] << " | ";
+        }
+        cout << "\n ";
+        for(int h = 0; h < size * 4 - 1; h++) {
+            cout << "-";
+        }
+        cout << endl;
+    }
+     */
+    for(int i = 0; i < size; i++) {
+        cout << "{";
+        for(int j = 0; j < size; j++) {
+            if(j == 8) {
+                cout << boardMain[i][j];
+            } else {
+                cout << boardMain[i][j] << ", ";
+            }
+        }
+        if(i != 8) {
+        cout << "}," << endl;
+        } else {
+            cout << "}" << endl;
+        }
+    }
+    hold = 0;
+    for(int i = 0; i < size; i++) {
+        for(int j = 0; j < size; j++) {
+            if(boardMain[i][j] != 0) {
+                hold++;
+            }
+        }
+    }
+    cout << hold;
+}
+
+int y = 0;
+void bugChecker(int row, int col, int num) {
+    while(y <= 0){
+        y++;
+        cout << endl;
+        cout << "The row is " << row << endl;
+        cout << "The col is " << col << endl;
+        cout << "The number being inserted is " << num << endl;
+        
+        cout << "Main board" << endl;
+        generateBoard();
+        cout << endl;
+        cout << "Hold Board" << endl;
+        for(int i = 0; i < size; i++) {
+            cout << "{";
+            for(int j = 0; j < size; j++) {
+                if(j == 8) {
+                    cout << boardHold[i][j];
+                } else {
+                    cout << boardHold[i][j] << ", ";
+                }
+            }
+            if(i != 8) {
+            cout << "}," << endl;
+            } else {
+                cout << "}" << endl;
+            }
+        }
+    }
+}
+
+
+int errorFix() {
+    int check = 0;
+    for(int i = 0; i < size; i++) {
+        for(int j = 0; j < size; j++) {
+            if(boardMain[i][j] != 0) {
+                check++;
+            }
+        }
+    }
+    return check;
+}
